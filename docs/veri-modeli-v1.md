@@ -314,6 +314,15 @@ davranıyor (`NoRateCell`), sebebi aynı.
 
 Aracın en satılabilir tek ekranı olabilir. Şirket ERP'sindeki boşluğu ilk kez rakamla görür.
 
+**Tasarımın dayandığı kabul:** kaynak veri eksiksiz değildir. Muhasebe kimi kaydı atlar,
+ödeme planını tanımlamaz, vadeyi boş bırakır. Araç bunu bir kusur olarak değil, bir veri
+olarak ele alır — eksikliği gizlemek yerine ölçer ve önüne koyar. Bu yüzden ilk çalıştırma
+"her şey yolunda" demez; büyük olasılıkla boşlukları gösterir, ki asıl değeri de budur.
+Aracın çıktısı girilen verinin kalitesi kadar iyidir — ama bu araçta eksik veri, çıktıyı
+sessizce bozmadan önce **işaretlenir**. (Bu koşul kullanım kılavuzunda da açıkça
+belirtilmeli: Borç Takip / yaşlandırma raporlarının anlamlı olması Logo'da ödeme/tahsilat
+planının tanımlı olmasına bağlıdır.)
+
 Gösterilecek kontroller:
 
 - Vade = fatura tarihi olan açık kalemler (adet + tutar)
@@ -331,21 +340,30 @@ soyut kalır ve kimse düzeltmez.
 
 ## 6. Logo Eşleme Notları
 
-> Bu bölüm doğrulanacak. Logo tablo/alan isimleri sürüme ve firma-dönem numarasına göre
-> değişiyor. **Erişim varken export şablonlarının kolon yapısı not alınmalı** —
-> gerçek veri değil, sadece başlıklar ve format.
+> Alan isimleri sürüme ve firma-dönem numarasına göre değişir; kolon başlıkları erişim
+> varken not alınmalı — gerçek veri değil, sadece başlıklar ve format. Aşağıdaki menü
+> yolları Tiger 3 v3.08'de doğrulandı; rapor içi kolonlar hâlâ teyit edilecek (bkz. 8).
 
-| Çekirdek tablo | Logo kaynağı (doğrulanacak) |
+**Doğru rapor dalı: `Finans → Ödeme/Tahsilat Raporları`.** İlk denemede kullanılan
+`Hareketler → Hareket Dökümü` (cari hesap hareketleri) yanlış kaynaktı: geçmiş defter
+hareketlerini listeler, vade tarihi ve kalan/kapanmamış tutar kolonu taşımaz — yani
+"neyin ne zaman ödeneceğini" değil "geçmişte ne oldu"yu anlatır. `open_item`'ın ihtiyacı
+olan açık kalem + vade bilgisi ödeme/tahsilat planına dayanan raporlardadır.
+
+| Çekirdek tablo | Logo kaynağı (Tiger 3 menü yolu) |
 |---|---|
-| `party` | Cari hesap kartları + ödeme planı tanımı |
-| `open_item` | Cari hesap hareketleri, kapanmamış ödeme hareketleri |
-| `instrument` | Çek/senet kartları + durum hareketleri |
+| `party` | Finans → Ana Kayıtlar → Cari Hesap Kartları (+ ödeme planı tanımı) |
+| `open_item` (çıkış) | Finans → Ödeme/Tahsilat Raporları → **Ayrıntılı Ödeme Listesi** |
+| `open_item` (giriş) | Finans → Ödeme/Tahsilat Raporları → **Ayrıntılı Tahsilat Listesi** |
+| `party.avg_delay_days` | Finans → Ödeme/Tahsilat Raporları → **Borç Takip Raporu** (yaşlandırma + ort. gecikme) |
+| `instrument` | Finans → **Çek/Senet Raporları** |
+| `bank_balance` | Finans → **Banka Raporları** + **Kasa Raporları** |
 | `loan_schedule` | Kredi modülü / mevcut Excel takip dosyası |
 | `payroll_item` | Bordro veya elle |
-| `bank_balance` | Banka hesap ekstresi / elle |
 
 Not: `open_item` için fatura başlığı değil, ödeme hareketi (taksit) seviyesi gerekiyor.
-Taksitli ödeme planında bir fatura birden çok satır üretir.
+Taksitli ödeme planında bir fatura birden çok satır üretir — Ayrıntılı Ödeme/Tahsilat
+Listesi'nin bu ayrıntıyı verdiği rapor kolonları görüldüğünde teyit edilecek.
 
 ---
 
@@ -400,11 +418,19 @@ backend + kimlik doğrulama gerektirir; v2.
 **6. bölümdeki Logo eşlemesi doğrulanmadı.** Erişim varken export şablonlarının kolon
 yapısı not alınmalı — gerçek veri değil, yalnızca başlıklar ve format. Öncelik sırası:
 
-1. `open_item` taksit seviyesinde çıkıyor mu (bkz. 7.1 koşulu)
+1. Ayrıntılı Ödeme/Tahsilat Listesi taksit seviyesinde mi, vade tarihi ve kalan tutar
+   kolonları var mı (bkz. 7.1 koşulu ve 6. bölüm)
 2. Vade alanı geliyor mu, geliyorsa `due_date == doc_date` oranı ne (3.2'deki kritik kural)
 3. `source_ref` olarak kullanılabilecek bir kayıt anahtarı (LOGICALREF vb.) export'ta var mı
 4. Çek/senet durum bilgisi hangi alanda ve hangi değerlerle geliyor (3.3'teki `status` enum'u)
 
+**Export biçimi uyarısı (deneyimle sabit).** İlk cari-hareket denemesi eski `.xls`
+formatında alınmış ve tam **65.536 satırda** (2¹⁶ — BIFF satır limiti) sessizce kesilmişti;
+2024–2026 istenirken dosya Mart 2025'te bitiyordu. Tüm export'lar **`.xlsx`** olarak veya
+tarih/cari aralığıyla filtrelenerek alınmalı. Ayrıca export'lar gerçek kişi/cari verisi
+taşır — sürüm kontrolüne (gizli depo dahil) konmamalı; adaptöre yerelde beslenir.
+
 ---
 
-*v1 — 7. bölümdeki beş karar alındı. Kod yazımından önce kalan tek blokaj 8. bölüm.*
+*v1 — 7. bölümdeki beş karar alındı. Kaynak raporlar 6. bölümde menü yoluyla teşhis
+edildi; kod yazımından önce kalan tek blokaj bu raporların kolonlarının teyidi (8. bölüm).*
