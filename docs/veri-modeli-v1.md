@@ -353,17 +353,42 @@ olan açık kalem + vade bilgisi ödeme/tahsilat planına dayanan raporlardadır
 | Çekirdek tablo | Logo kaynağı (Tiger 3 menü yolu) |
 |---|---|
 | `party` | Finans → Ana Kayıtlar → Cari Hesap Kartları (+ ödeme planı tanımı) |
-| `open_item` (çıkış) | Finans → Ödeme/Tahsilat Raporları → **Ayrıntılı Ödeme Listesi** |
-| `open_item` (giriş) | Finans → Ödeme/Tahsilat Raporları → **Ayrıntılı Tahsilat Listesi** |
-| `party.avg_delay_days` | Finans → Ödeme/Tahsilat Raporları → **Borç Takip Raporu** (yaşlandırma + ort. gecikme) |
+| `open_item` (giriş + çıkış) | Finans → Ödeme/Tahsilat Raporları → **Borç Takip Raporu** (aşağıda kolon eşlemesi) |
+| `party.avg_delay_days` | Aynı Borç Takip Raporu → `Gün` kolonu (gecikme hazır geliyor, ayrıca hesaplanmıyor) |
 | `instrument` | Finans → **Çek/Senet Raporları** |
 | `bank_balance` | Finans → **Banka Raporları** + **Kasa Raporları** |
 | `loan_schedule` | Kredi modülü / mevcut Excel takip dosyası |
 | `payroll_item` | Bordro veya elle |
 
-Not: `open_item` için fatura başlığı değil, ödeme hareketi (taksit) seviyesi gerekiyor.
-Taksitli ödeme planında bir fatura birden çok satır üretir — Ayrıntılı Ödeme/Tahsilat
-Listesi'nin bu ayrıntıyı verdiği rapor kolonları görüldüğünde teyit edilecek.
+### 6.1 Borç Takip Raporu → `open_item` kolon eşlemesi (doğrulandı)
+
+Tiger 3 v3.08'den alınan gerçek export incelendi (`.xlsx`, 9.198 satır, kesilme yok).
+Rapor **çift bloklu bir kapama/eşleştirme dökümü**: sol blok bir hareket, sağ blok o
+hareketin kapattığı eski kalem. Kolonlar:
+
+| Rapor kolonu | Açıklama | `open_item` alanı |
+|---|---|---|
+| `Cari Hesap` | `kod / ad` tek hücrede — %100 ` / ` ayraçlı | `party.code` + `party.name` (bölünür) |
+| `Vade T.` (sol) | Hareketin vadesi — **var** | `due_date` |
+| `İşlem T.` (sol) | İşlem (belge) tarihi | `doc_date` |
+| `Belge No.` | `SAN2026…`, `SNL2026…` | `source_ref` / `doc_no` |
+| `İşlem Türü` | Fatura tipleri; yön buradan çıkar (satış = giriş, satınalma/alınan hizmet = çıkış, iade = ters) | `direction`, `doc_type` |
+| `Borç` / `Alacak` | Ayrı temiz sayısal kolonlar (eski `(A)/(B)` ekli format değil) | `amount_original` + `direction` |
+| `Kapanan Tutar` (sağ) | Bu hareketin kapattığı tutar | `paid_amount` (türetme girdisi) |
+| `Gün` (sağ) | Vade ile ödeme arası gün (−erken/+geç) | `party.avg_delay_days` kalibrasyonu (4.2) |
+
+**Açık bakiye doğrudan bir kolon değil, türetilir.** Bir kalemin kalan açık tutarı =
+`Borç (veya Alacak) − o belgeye eşleşen Kapanan Tutar toplamı`. Adaptör bu eşleştirmeyi
+Belge No üzerinden yapar; kalanı > 0 olan kalem, `Vade T.` vadesiyle açık `open_item`
+olur.
+
+**Taksit:** 133 belge sol tarafta birden çok İşlem no ile geliyor — taksit/kısmi yapı
+temsil ediliyor (7.1 koşulu olumlu). Tek İşlem no'lu belgeler tek satır.
+
+**Doğrulanacak tek nokta (bkz. 8):** incelenen export'ta sol vadeler yalnızca Haz–Eyl
+2026 aralığındaydı; rapor alınırken tarih filtresi uygulanmış olabilir. Projeksiyon için
+**tüm açık kalemler** gerekir (2025'ten kalma, vadesi geçmiş ama kapanmamış borçlar dahil)
+— export filtresiz ya da "yalnızca açık kalemler" seçeneğiyle alınmalı.
 
 ---
 
@@ -418,11 +443,16 @@ backend + kimlik doğrulama gerektirir; v2.
 **6. bölümdeki Logo eşlemesi doğrulanmadı.** Erişim varken export şablonlarının kolon
 yapısı not alınmalı — gerçek veri değil, yalnızca başlıklar ve format. Öncelik sırası:
 
-1. Ayrıntılı Ödeme/Tahsilat Listesi taksit seviyesinde mi, vade tarihi ve kalan tutar
-   kolonları var mı (bkz. 7.1 koşulu ve 6. bölüm)
-2. Vade alanı geliyor mu, geliyorsa `due_date == doc_date` oranı ne (3.2'deki kritik kural)
-3. `source_ref` olarak kullanılabilecek bir kayıt anahtarı (LOGICALREF vb.) export'ta var mı
-4. Çek/senet durum bilgisi hangi alanda ve hangi değerlerle geliyor (3.3'teki `status` enum'u)
+`open_item`'ın ana kaynağı (Borç Takip Raporu) doğrulandı — vade, borç/alacak, belge no,
+gecikme günü ve kapama tutarı mevcut (bkz. 6.1). Kalan teyitler:
+
+1. **Export kapsamı:** rapor filtresiz mi, yoksa tarih aralığıyla mı alındı? Projeksiyon
+   tüm açık kalemleri ister; incelenen dosyada sol vadeler yalnızca Haz–Eyl 2026'ydı.
+2. `due_date == doc_date` oranı ne (3.2'deki şüpheli-vade kuralı) — gerçek açık kalem
+   listesinde ölçülecek.
+3. Çek/senet durum bilgisi hangi alanda, hangi değerlerle geliyor (3.3'teki `status`
+   enum'u) — Çek/Senet Raporları henüz incelenmedi.
+4. `bank_balance` için açılış nakit: Banka + Kasa raporlarının kolonları.
 
 **Export biçimi uyarısı (deneyimle sabit).** İlk cari-hareket denemesi eski `.xls`
 formatında alınmış ve tam **65.536 satırda** (2¹⁶ — BIFF satır limiti) sessizce kesilmişti;
@@ -432,5 +462,6 @@ taşır — sürüm kontrolüne (gizli depo dahil) konmamalı; adaptöre yerelde
 
 ---
 
-*v1 — 7. bölümdeki beş karar alındı. Kaynak raporlar 6. bölümde menü yoluyla teşhis
-edildi; kod yazımından önce kalan tek blokaj bu raporların kolonlarının teyidi (8. bölüm).*
+*v1 — 7. bölümdeki beş karar alındı. `open_item`'ın ana kaynağı olan Borç Takip Raporu
+gerçek export üzerinden doğrulandı ve kolon eşlemesi 6.1'de sabitlendi. Kalan teyitler
+8. bölümde: export kapsamı, çek/senet ve banka/kasa raporları.*
