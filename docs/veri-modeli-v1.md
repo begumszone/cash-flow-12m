@@ -336,6 +336,31 @@ Gösterilecek kontroller:
 Her satır tıklanabilir olmalı, altındaki kayıt listesine inmeli. Aksi halde uyarı
 soyut kalır ve kimse düzeltmez.
 
+### 5.1 İlk gerçek ölçüm (örnek export, tarih filtreli)
+
+Borç Takip adaptörü ilk gerçek export'ta çalıştırıldı (9.198 satır, Haz–Eyl 2026
+filtresi — yani tüm açık kalemler değil). Panelin çıkardığı en çarpıcı sayı:
+
+| | Açık kalem | |
+|---|---|---|
+| Vade **güvenilir** | 64 | %2,3 |
+| Vade **şüpheli** (vade = fatura tarihi) | 2.775 | **%97,7** |
+| Vade eksik | 0 | — |
+
+Yani bu veride ödeme planı neredeyse hiç tanımlı değil: açık kalemlerin %97,7'sinde
+Logo vadeyi fatura tarihine eşitlemiş. ERP'nin verdiği vade, olduğu gibi kullanılamaz.
+
+**Sonucu tasarımı yeniden önceliklendiriyor.** 4.1'deki etkin vade türetmesi ve onun
+dayandığı `party.default_term_days` (cari bazında vade) artık "iyi olur" değil, **projenin
+belkemiği**: gerçek vade ERP'de olmadığına göre, cari bazında ödeme vadesinden türetilmek
+zorunda. Bu da `party` tablosunun ilk günden ciddiye alınması gereken bir sözleşme/vade
+kaynağına ihtiyacı olduğu anlamına gelir (sözleşme, elle giriş — ERP değil).
+
+Not: aynı veride "vadesi geçmiş" 2.785 kalem görünüyor, ama bunların neredeyse tamamı
+şüpheli vadeli olduğundan bu rakam da gerçek değil — panel iki sayıyı yan yana gösterdiği
+için yanıltmıyor, kendini teşhis ediyor. Ayrıca dekontlar (165M TL) v0'da yönü belirsiz
+olduğu için açık kalem sayılmadı; gerçek borç/alacak içerenler sonraki turda ele alınacak.
+
 ---
 
 ## 6. Logo Eşleme Notları
