@@ -1,0 +1,8 @@
+node_modules/
+dist/
+
+# ERP export'ları — gerçek cari/tutar verisi taşır, ASLA sürüm kontrolüne konmaz.
+# Adaptöre yerelde beslenir. Bkz. docs/veri-modeli-v1.md bölüm 8.
+*.xls
+*.xlsx
+data/

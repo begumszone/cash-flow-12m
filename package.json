@@ -1,0 +1,19 @@
+{
+  "name": "cash-flow-13w",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "13 haftalık rolling nakit akışı projeksiyon aracı",
+  "scripts": {
+    "test": "vitest run",
+    "inspect:report": "tsx scripts/inspectReport.ts"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "~5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
