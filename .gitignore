@@ -6,3 +6,6 @@ dist/
 *.xls
 *.xlsx
 data/
+
+# Playwright ekran görüntüleri (sentetik veriyle üretilir, gerekmez)
+*.png

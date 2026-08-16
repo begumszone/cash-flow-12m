@@ -6,23 +6,9 @@
  * Kullanım: npm run inspect:report -- /yol/borc-takip.xlsx [asOf=YYYY-MM-DD]
  */
 import ExcelJS from 'exceljs';
-import { adaptBorcTakip, type BorcTakipRow } from '../src/adapters/logo/borcTakip';
+import { adaptBorcTakip } from '../src/adapters/logo/borcTakip';
+import { rowsFromMatrix } from '../src/adapters/logo/fromMatrix';
 import { assessQuality, type CountAmount } from '../src/quality/assess';
-import { parseLocaleNumber } from '../src/lib/parseNumber';
-
-function toIso(v: unknown): string | null {
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  return null;
-}
-function toNum(v: unknown): number {
-  if (typeof v === 'number') return v;
-  return parseLocaleNumber(v == null ? null : String(v)) ?? 0;
-}
-function toStr(v: unknown): string {
-  if (v == null) return '';
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  return String(v).trim();
-}
 
 async function main(): Promise<void> {
   const path = process.argv[2];
@@ -37,26 +23,16 @@ async function main(): Promise<void> {
   const ws = wb.worksheets[0];
   if (!ws) throw new Error('Çalışma sayfası bulunamadı');
 
-  // Satır 1: rapor başlığı, Satır 2: kolon başlıkları, Satır 3+: veri.
-  const rows: BorcTakipRow[] = [];
-  ws.eachRow((r, n) => {
-    if (n < 3) return;
-    const c = (i: number): unknown => r.getCell(i).value;
-    const cari = toStr(c(1));
-    if (cari === '') return;
-    rows.push({
-      cariHesap: cari,
-      vadeTarihi: toIso(c(3)),
-      islemTarihi: toIso(c(4)),
-      belgeNo: toStr(c(5)),
-      islemTuru: toStr(c(6)),
-      borc: toNum(c(7)),
-      alacak: toNum(c(8)),
-      kapananBelgeNo: toStr(c(12)),
-      kapananTutar: toNum(c(15)),
+  const matrix: unknown[][] = [];
+  ws.eachRow({ includeEmpty: true }, (row) => {
+    const cells: unknown[] = [];
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cells[colNumber - 1] = cell.value instanceof Date ? cell.value : (cell.text ?? cell.value);
     });
+    matrix.push(cells);
   });
 
+  const rows = rowsFromMatrix(matrix);
   const result = adaptBorcTakip(rows);
   const q = assessQuality(result, asOf);
 
