@@ -54,6 +54,7 @@ export default function App() {
   const openingBalance = useMemo(() => availableCash(accounts), [accounts]);
   const [defaultTerm, setDefaultTerm] = useState(30);
   const [scenario, setScenario] = useState<Scenario>('base');
+  const [horizon, setHorizon] = useState(52); // 12 ay (rolling) varsayılan
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
   const [showExec, setShowExec] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -99,13 +100,14 @@ export default function App() {
         ? project(adapter.openItems, {
             openingBalance,
             asOf,
+            horizon,
             scenario,
             terms,
             fallbackTermDays: { in: defaultTerm, out: defaultTerm },
             instruments: cek?.instruments,
           })
         : null,
-    [adapter, cek, openingBalance, asOf, scenario, terms, defaultTerm],
+    [adapter, cek, openingBalance, asOf, horizon, scenario, terms, defaultTerm],
   );
   const summary = useMemo(
     () => (projection && adapter ? buildSummary(projection, adapter, cek?.instruments ?? null) : null),
@@ -150,9 +152,9 @@ export default function App() {
     <div className="app">
       <header className="app__header">
         <div>
-          <h1>13 Haftalık Nakit Akışı</h1>
+          <h1>Nakit Akışı Projeksiyonu</h1>
           <p className="app__sub">
-            Logo raporlarından haftalık likidite projeksiyonu · veriniz tarayıcınızdan çıkmaz
+            Logo raporlarından rolling likidite projeksiyonu · veriniz tarayıcınızdan çıkmaz
           </p>
         </div>
         {rows && (
@@ -214,6 +216,18 @@ export default function App() {
                 value={defaultTerm}
                 onChange={(e) => setDefaultTerm(Number(e.target.value) || 0)}
               />
+            </label>
+            <label className="control">
+              <span>Ufuk</span>
+              <select
+                className="ctrl-select"
+                value={horizon}
+                onChange={(e) => setHorizon(Number(e.target.value))}
+              >
+                <option value={13}>13 hafta (~3 ay)</option>
+                <option value={26}>26 hafta (~6 ay)</option>
+                <option value={52}>52 hafta (12 ay)</option>
+              </select>
             </label>
             <div className="control">
               <span>Senaryo</span>

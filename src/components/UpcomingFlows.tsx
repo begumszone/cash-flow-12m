@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ProjectionResult, ScheduledFlow } from '../projection/project';
-import { formatTRY, shortDate } from '../lib/format';
+import { formatTRY, shortDate, horizonLabel } from '../lib/format';
 
 interface Props {
   result: ProjectionResult;
@@ -31,8 +31,8 @@ export function UpcomingFlows({ result }: Props) {
     <section className="panel">
       <h2>Yaklaşan Ödemeler ve Tahsilatlar</h2>
       <p className="panel__lead">
-        13 hafta içinde vadesi gelen kalemler, hafta hafta. Kimden ne bekleniyor, kime ne
-        ödenecek — tek tek.
+        {horizonLabel(result.weeks.length)} içinde vadesi gelen kalemler, hafta hafta. Kimden ne
+        bekleniyor, kime ne ödenecek — tek tek.
       </p>
 
       <div className="flow-filter">

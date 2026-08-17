@@ -8,6 +8,8 @@ import { instrumentContribution } from '../adapters/logo/cekSenet';
  * kapanış bakiyesi (likidite riski) — 13 hafta içinde nakit dibe vurduğu an.
  */
 export interface Summary {
+  /** Ufuk uzunluğu (hafta) — etiketler için. */
+  horizonWeeks: number;
   openingBalance: number;
   endingBalance: number;
   /** 13 hafta içindeki en düşük kapanış ve hangi hafta. */
@@ -55,6 +57,7 @@ export function buildSummary(
 
   const lowestWeek = weeks[lowestIdx];
   return {
+    horizonWeeks: weeks.length,
     openingBalance: weeks[0]?.opening ?? 0,
     endingBalance: weeks[weeks.length - 1]?.closing ?? 0,
     lowestClosing: Number.isFinite(lowest) ? lowest : 0,

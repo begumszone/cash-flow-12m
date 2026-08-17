@@ -1,6 +1,6 @@
 import type { Summary } from '../projection/summary';
 import type { ProjectionResult } from '../projection/project';
-import { formatTRY, shortDate } from '../lib/format';
+import { formatTRY, shortDate, horizonLabel } from '../lib/format';
 
 interface Props {
   summary: Summary;
@@ -20,19 +20,28 @@ function longDate(iso: string): string {
 }
 
 /**
- * Yönetici Özeti — yöneticiye tek bakışta durum. Detay yok: açılış, dip nokta,
- * 13 hafta sonu, en büyük ödemeler ve kritik haftalar. Karar için gereken kadar.
+ * Yönetici Özeti — tek bakışta durum. İki katman: (1) BU HAFTA (raporun alındığı
+ * hafta) toplam tahsilat/ödeme/net; (2) ufuk boyunca dip nokta. Sade tutulur,
+ * yalnızca gerçekten kritik olan (negatif dip) renklenir.
  */
 export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport }: Props) {
   const deficit = summary.lowestClosing < 0;
-  const net = summary.totalIn - summary.totalOut;
+  const hl = horizonLabel(summary.horizonWeeks);
+  const w0 = projection.weeks[0];
+
+  // Bu haftanın çek kısmı (kalemlerden).
+  let weekChequeIn = 0;
+  let weekChequeOut = 0;
+  for (const f of projection.flows) {
+    if (f.weekIndex !== 0 || f.kind !== 'cheque') continue;
+    if (f.direction === 'in') weekChequeIn += f.amount;
+    else weekChequeOut += f.amount;
+  }
 
   const topPayments = projection.flows
     .filter((f) => f.direction === 'out')
     .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
-
-  const deficitWeeks = projection.weeks.filter((w) => w.closing < 0);
+    .slice(0, 3);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -40,55 +49,71 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
         <div className="modal__head">
           <div>
             <h2>Yönetici Özeti</h2>
-            <p className="modal__date">{longDate(asOf)} · 13 haftalık görünüm</p>
+            <p className="modal__date">{longDate(asOf)} · {hl} rolling görünüm</p>
           </div>
           <button className="modal__close" onClick={onClose} aria-label="Kapat">
             ✕
           </button>
         </div>
 
-        <div className={`verdict ${deficit ? 'verdict--bad' : 'verdict--good'}`}>
+        {/* BU HAFTA */}
+        <h3 className="exec-h3">Bu hafta {w0 && <span className="muted">· {shortDate(w0.start)}</span>}</h3>
+        <div className="exec-week">
+          <div className="exec-week__tile">
+            <span className="exec-week__label">Tahsilat</span>
+            <span className="exec-week__value pos">{formatTRY(w0?.totalIn ?? 0)} ₺</span>
+            {weekChequeIn > 0 && <span className="exec-week__sub">{formatTRY(weekChequeIn)} ₺ çek</span>}
+          </div>
+          <div className="exec-week__tile">
+            <span className="exec-week__label">Ödeme</span>
+            <span className="exec-week__value neg">{formatTRY(w0?.totalOut ?? 0)} ₺</span>
+            {weekChequeOut > 0 && <span className="exec-week__sub">{formatTRY(weekChequeOut)} ₺ çek</span>}
+          </div>
+          <div className="exec-week__tile">
+            <span className="exec-week__label">Net</span>
+            <span className={`exec-week__value ${(w0?.net ?? 0) < 0 ? 'neg' : 'pos'}`}>
+              {formatTRY(w0?.net ?? 0)} ₺
+            </span>
+            <span className="exec-week__sub">kapanış {formatTRY(w0?.closing ?? 0)} ₺</span>
+          </div>
+        </div>
+
+        {/* UFUK DURUMU */}
+        <h3 className="exec-h3">{hl} genel</h3>
+        <p className="exec-verdict">
           {deficit ? (
             <>
-              <strong>Dikkat:</strong> Önümüzdeki 13 haftada {summary.deficitWeeks} hafta nakit açığı
-              görünüyor. En düşük nokta <strong>{formatTRY(summary.lowestClosing)} ₺</strong> (
-              {shortDate(summary.lowestWeekStart)} haftası). Önlem gerekebilir.
+              <span className="chip-dot dot-out" /> {summary.deficitWeeks} haftada nakit açığı; en düşük{' '}
+              <strong className="neg">{formatTRY(summary.lowestClosing)} ₺</strong> (
+              {shortDate(summary.lowestWeekStart)} haftası).
             </>
           ) : (
             <>
-              <strong>Durum olumlu:</strong> Nakit ufuk boyunca pozitif kalıyor. En düşük nokta{' '}
+              <span className="chip-dot dot-in" /> Nakit ufuk boyunca pozitif; en düşük{' '}
               <strong>{formatTRY(summary.lowestClosing)} ₺</strong> ({shortDate(summary.lowestWeekStart)}{' '}
               haftası).
             </>
           )}
+        </p>
+        <div className="exec-mini">
+          <span>
+            Açılış <strong>{formatTRY(summary.openingBalance)} ₺</strong>
+          </span>
+          <span>
+            {hl} sonu <strong>{formatTRY(summary.endingBalance)} ₺</strong>
+          </span>
+          <span>
+            Toplam tahsilat <strong className="pos">{formatTRY(summary.totalIn)} ₺</strong>
+          </span>
+          <span>
+            Toplam ödeme <strong className="neg">{formatTRY(summary.totalOut)} ₺</strong>
+          </span>
         </div>
 
-        <div className="exec-figures">
-          <div className="exec-fig">
-            <span className="exec-fig__label">Açılış nakdi</span>
-            <span className="exec-fig__value">{formatTRY(summary.openingBalance)} ₺</span>
-          </div>
-          <div className="exec-fig">
-            <span className="exec-fig__label">En düşük nokta</span>
-            <span className={`exec-fig__value ${deficit ? 'neg' : ''}`}>
-              {formatTRY(summary.lowestClosing)} ₺
-            </span>
-          </div>
-          <div className="exec-fig">
-            <span className="exec-fig__label">13 hafta sonu</span>
-            <span className="exec-fig__value">{formatTRY(summary.endingBalance)} ₺</span>
-          </div>
-          <div className="exec-fig">
-            <span className="exec-fig__label">Net (13 hafta)</span>
-            <span className={`exec-fig__value ${net < 0 ? 'neg' : 'pos'}`}>{formatTRY(net)} ₺</span>
-          </div>
-        </div>
-
-        <div className="exec-cols">
-          <div>
+        {topPayments.length > 0 && (
+          <>
             <h3 className="exec-h3">En büyük ödemeler</h3>
             <ul className="exec-list">
-              {topPayments.length === 0 && <li className="muted">—</li>}
               {topPayments.map((f, i) => (
                 <li key={i}>
                   <span className="exec-list__party" title={f.label}>
@@ -99,26 +124,8 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
                 </li>
               ))}
             </ul>
-          </div>
-          <div>
-            <h3 className="exec-h3">Kritik haftalar</h3>
-            {deficitWeeks.length === 0 ? (
-              <p className="muted" style={{ fontSize: 13 }}>
-                Nakit açığı olan hafta yok.
-              </p>
-            ) : (
-              <ul className="exec-list">
-                {deficitWeeks.map((w) => (
-                  <li key={w.key}>
-                    <span className="exec-list__party">{w.key}</span>
-                    <span className="exec-list__date">{shortDate(w.start)}</span>
-                    <span className="exec-list__amt neg">{formatTRY(w.closing)} ₺</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
+          </>
+        )}
 
         <div className="modal__foot">
           <button className="btn" onClick={onClose}>

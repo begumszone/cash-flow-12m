@@ -10,7 +10,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import type { ProjectionResult } from '../projection/project';
-import { formatTRY, shortDate } from '../lib/format';
+import { formatTRY, shortDate, horizonLabel } from '../lib/format';
 
 interface Props {
   result: ProjectionResult;
@@ -31,7 +31,7 @@ export function ProjectionView({ result }: Props) {
 
   return (
     <section className="panel">
-      <h2>13 Haftalık Nakit Projeksiyonu</h2>
+      <h2>{horizonLabel(result.weeks.length)} Nakit Projeksiyonu</h2>
 
       {negativeWeeks.length > 0 ? (
         <p className="panel__note panel__note--bad">
