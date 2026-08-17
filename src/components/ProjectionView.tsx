@@ -48,7 +48,11 @@ export function ProjectionView({ result }: Props) {
         <ResponsiveContainer width="100%" height={320}>
           <ComposedChart data={data} margin={{ top: 10, right: 12, bottom: 4, left: 12 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11 }}
+              interval={result.weeks.length > 16 ? Math.floor(result.weeks.length / 13) : 0}
+            />
             <YAxis tickFormatter={(v: number) => formatTRY(v)} tick={{ fontSize: 11 }} width={70} />
             <Tooltip
               formatter={(v: number, name) => [`${formatTRY(Math.abs(v))} ₺`, name]}
