@@ -11,7 +11,12 @@ export interface ExportSections {
 }
 
 function esc(v: string | number): string {
-  const s = String(v);
+  if (typeof v === 'number') return String(v);
+  let s = v;
+  // CSV formül enjeksiyonu koruması: dosyadan gelen bir metin (ör. cari adı)
+  // =,+,-,@,TAB,CR ile başlıyorsa Excel onu formül sanır ve çalıştırabilir.
+  // Başına tek tırnak koyup etkisizleştiriyoruz (OWASP önerisi).
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 function row(...cells: (string | number)[]): string {

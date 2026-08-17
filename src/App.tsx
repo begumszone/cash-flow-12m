@@ -24,6 +24,8 @@ import { buildCsv, type ExportSections } from './lib/exportCsv';
 import { saveTextFile } from './lib/saveFile';
 import { formatTRY, todayIso } from './lib/format';
 
+const MAX_FILE_BYTES = 40 * 1024 * 1024; // 40 MB — makul üst sınır
+
 const EXPORT_ERRORS: Record<string, string> = {
   declined: 'İndirme iptal edildi.',
   extension_not_enabled: 'Bu ortamda CSV indirme kapalı. Uygulamayı bilgisayarınızda çalıştırırsanız Excel dosyası iner.',
@@ -67,6 +69,7 @@ export default function App() {
     setBusy(true);
     setError(null);
     try {
+      if (buffer.byteLength > MAX_FILE_BYTES) throw new Error('Dosya çok büyük (40 MB üstü). Tarih aralığıyla daraltıp .xlsx olarak alın.');
       const parsed = await readBorcTakipWorkbook(buffer);
       if (parsed.length === 0) throw new Error('Dosyada veri satırı bulunamadı. Doğru rapor mu?');
       setRows(parsed);
@@ -82,6 +85,7 @@ export default function App() {
     setCekBusy(true);
     setCekError(null);
     try {
+      if (buffer.byteLength > MAX_FILE_BYTES) throw new Error('Dosya çok büyük (40 MB üstü).');
       const parsed = await readCekSenetWorkbook(buffer);
       if (parsed.length === 0) throw new Error('Çek/senet satırı bulunamadı.');
       setCekRows(parsed);
