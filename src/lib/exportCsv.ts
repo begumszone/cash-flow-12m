@@ -1,5 +1,6 @@
 import type { ProjectionResult } from '../projection/project';
 import type { Summary } from '../projection/summary';
+import { categoryLabel } from '../core/category';
 
 /** Excel'e aktarılacak bölümler — kullanıcı hangilerini istediğini seçer. */
 export interface ExportSections {
@@ -62,10 +63,12 @@ export function buildCsv(
 
   const flowsSection = (title: string, dir: 'in' | 'out') => {
     lines.push(row(title));
-    lines.push(row('Tarih', 'Cari', 'Tür', 'Tutar', 'Hafta'));
+    lines.push(row('Tarih', 'Cari', 'Kategori', 'Tür', 'Tutar', 'Hafta'));
     for (const f of projection.flows) {
       if (f.direction !== dir) continue;
-      lines.push(row(trDate(f.date), f.label, f.detail, money(f.amount), projection.weeks[f.weekIndex]?.key ?? ''));
+      lines.push(
+        row(trDate(f.date), f.label, categoryLabel(f.category), f.detail, money(f.amount), projection.weeks[f.weekIndex]?.key ?? ''),
+      );
     }
     lines.push('');
   };

@@ -1,5 +1,7 @@
 import type { OpenItem } from '../core/openItem';
 import type { Instrument } from '../core/instrument';
+import type { CashCategory } from '../core/category';
+import { categoryFor } from '../core/category';
 import { instrumentContribution } from '../adapters/logo/cekSenet';
 import {
   deriveEffectiveDueDate,
@@ -48,6 +50,8 @@ export interface ScheduledFlow {
   kind: 'invoice' | 'cheque';
   /** Fatura türü ya da çek durumu — satırın ne olduğunu açıklar. */
   detail: string;
+  /** Gelir/gider kategorisi (vergi, maaş, stok…). */
+  category: CashCategory;
 }
 
 export interface ProjectionResult {
@@ -67,6 +71,8 @@ export interface ProjectOptions extends DeriveOptions {
   scenario: Scenario;
   /** İsteğe bağlı çek/senet portföyü — vadeleri güvenilir, türetme gerekmez. */
   instruments?: Instrument[];
+  /** Cari bazında elle atanmış gelir/gider kategorileri. */
+  categories?: Map<string, CashCategory>;
 }
 
 /** Bir açık kalemin, seçilen senaryoda kullanılacak tarihi ve güveni. */
@@ -118,6 +124,7 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
       label: item.party_name || item.party_code,
       kind: 'invoice',
       detail: item.doc_type,
+      category: categoryFor(item.direction, item.doc_type, item.party_code, opts.categories ?? new Map()),
     });
   }
 
@@ -145,6 +152,7 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
       label: inst.party_name || inst.party_code || inst.drawer_name,
       kind: 'cheque',
       detail: inst.instrument_type === 'promissory_note' ? 'Senet' : 'Çek',
+      category: categoryFor(c.dir, 'Çek', inst.party_code, opts.categories ?? new Map()),
     });
   }
 

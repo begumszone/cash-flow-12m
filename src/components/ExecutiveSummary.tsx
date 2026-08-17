@@ -1,5 +1,6 @@
 import type { Summary } from '../projection/summary';
 import type { ProjectionResult } from '../projection/project';
+import { categoryBreakdown } from '../projection/categoryBreakdown';
 import { formatTRY, shortDate, horizonLabel } from '../lib/format';
 
 interface Props {
@@ -38,10 +39,9 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
     else weekChequeOut += f.amount;
   }
 
-  const topPayments = projection.flows
-    .filter((f) => f.direction === 'out')
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 3);
+  const breakdown = categoryBreakdown(projection.flows);
+  const topExpenseCats = breakdown.expense.slice(0, 5);
+  const maxCat = topExpenseCats[0]?.amount ?? 1;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -110,17 +110,17 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
           </span>
         </div>
 
-        {topPayments.length > 0 && (
+        {topExpenseCats.length > 0 && (
           <>
-            <h3 className="exec-h3">En büyük ödemeler</h3>
-            <ul className="exec-list">
-              {topPayments.map((f, i) => (
-                <li key={i}>
-                  <span className="exec-list__party" title={f.label}>
-                    {f.label}
+            <h3 className="exec-h3">Ödemeler nereye gidiyor</h3>
+            <ul className="cat-bars">
+              {topExpenseCats.map((c) => (
+                <li key={c.key} className="cat-bar">
+                  <span className="cat-bar__label">{c.label}</span>
+                  <span className="cat-bar__track">
+                    <span className="cat-bar__fill" style={{ width: `${(c.amount / maxCat) * 100}%` }} />
                   </span>
-                  <span className="exec-list__date">{shortDate(f.date)}</span>
-                  <span className="exec-list__amt neg">{formatTRY(f.amount)} ₺</span>
+                  <span className="cat-bar__amt neg">{formatTRY(c.amount)} ₺</span>
                 </li>
               ))}
             </ul>

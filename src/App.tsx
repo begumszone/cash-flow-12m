@@ -15,6 +15,8 @@ import { DataQualityPanel } from './components/DataQualityPanel';
 import { ProjectionView } from './components/ProjectionView';
 import { UpcomingFlows } from './components/UpcomingFlows';
 import { PartyTermsEditor } from './components/PartyTermsEditor';
+import { CategoryEditor } from './components/CategoryEditor';
+import type { CashCategory } from './core/category';
 import { ChequePanel } from './components/ChequePanel';
 import { ExecutiveSummary } from './components/ExecutiveSummary';
 import { ExportDialog } from './components/ExportDialog';
@@ -56,6 +58,7 @@ export default function App() {
   const [scenario, setScenario] = useState<Scenario>('base');
   const [horizon, setHorizon] = useState(52); // 12 ay (rolling) varsayılan
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
+  const [categories, setCategories] = useState<Map<string, CashCategory>>(new Map());
   const [showExec, setShowExec] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
@@ -105,9 +108,10 @@ export default function App() {
             terms,
             fallbackTermDays: { in: defaultTerm, out: defaultTerm },
             instruments: cek?.instruments,
+            categories,
           })
         : null,
-    [adapter, cek, openingBalance, asOf, horizon, scenario, terms, defaultTerm],
+    [adapter, cek, openingBalance, asOf, horizon, scenario, terms, defaultTerm, categories],
   );
   const summary = useMemo(
     () => (projection && adapter ? buildSummary(projection, adapter, cek?.instruments ?? null) : null),
@@ -135,6 +139,15 @@ export default function App() {
     }
   }
 
+  function setPartyCategory(code: string, category: CashCategory | null) {
+    setCategories((prev) => {
+      const next = new Map(prev);
+      if (category === null) next.delete(code);
+      else next.set(code, category);
+      return next;
+    });
+  }
+
   function reset() {
     setRows(null);
     setFileName('');
@@ -142,6 +155,7 @@ export default function App() {
     setCekRows(null);
     setCekFileName('');
     setTerms(new Map());
+    setCategories(new Map());
     setAccounts([
       { id: 'kasa', kind: 'cash', name: 'Kasa', balance: 0, restricted: false },
       { id: 'banka', kind: 'bank', name: 'Banka', balance: 0, restricted: false },
@@ -152,7 +166,7 @@ export default function App() {
     <div className="app">
       <header className="app__header">
         <div>
-          <h1>Nakit Akışı Projeksiyonu</h1>
+          <h1>12 Aylık Nakit Akışı</h1>
           <p className="app__sub">
             Logo raporlarından rolling likidite projeksiyonu · veriniz tarayıcınızdan çıkmaz
           </p>
@@ -267,6 +281,7 @@ export default function App() {
             }}
           />
           <DataQualityPanel q={quality} />
+          <CategoryEditor parties={parties} categories={categories} onChange={setPartyCategory} />
           <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
         </>
       )}
