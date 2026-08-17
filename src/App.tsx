@@ -16,7 +16,18 @@ import { ProjectionView } from './components/ProjectionView';
 import { UpcomingFlows } from './components/UpcomingFlows';
 import { PartyTermsEditor } from './components/PartyTermsEditor';
 import { ChequePanel } from './components/ChequePanel';
+import { ExecutiveSummary } from './components/ExecutiveSummary';
+import { ExportDialog } from './components/ExportDialog';
+import { buildCsv, type ExportSections } from './lib/exportCsv';
+import { saveTextFile } from './lib/saveFile';
 import { formatTRY, todayIso } from './lib/format';
+
+const EXPORT_ERRORS: Record<string, string> = {
+  declined: 'İndirme iptal edildi.',
+  extension_not_enabled: 'Bu ortamda CSV indirme kapalı. Uygulamayı bilgisayarınızda çalıştırırsanız Excel dosyası iner.',
+  too_large: 'Dosya çok büyük.',
+  rate_limited: 'Az önce bir indirme başlatıldı; birkaç saniye sonra tekrar deneyin.',
+};
 
 const SCENARIOS: { key: Scenario; label: string; hint: string }[] = [
   { key: 'pessimistic', label: 'Kötümser', hint: 'Tahsilat gecikmeli; belirsiz vadeli girişler hariç' },
@@ -44,6 +55,9 @@ export default function App() {
   const [defaultTerm, setDefaultTerm] = useState(30);
   const [scenario, setScenario] = useState<Scenario>('base');
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
+  const [showExec, setShowExec] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [exportNote, setExportNote] = useState<string | null>(null);
 
   async function handleFile(buffer: ArrayBuffer, name: string) {
     setBusy(true);
@@ -107,6 +121,18 @@ export default function App() {
     });
   }
 
+  async function doExport(sections: ExportSections) {
+    if (!projection || !summary) return;
+    const csv = buildCsv(projection, summary, asOf, sections);
+    const outcome = await saveTextFile(`nakit-akis-${asOf}.csv`, csv);
+    if (outcome.ok) {
+      setShowExport(false);
+      setExportNote(null);
+    } else {
+      setExportNote(EXPORT_ERRORS[outcome.error ?? ''] ?? 'İndirme yapılamadı.');
+    }
+  }
+
   function reset() {
     setRows(null);
     setFileName('');
@@ -130,9 +156,23 @@ export default function App() {
           </p>
         </div>
         {rows && (
-          <button className="btn" onClick={reset}>
-            Yeni dosya
-          </button>
+          <div className="app__actions">
+            <button className="btn btn--primary" onClick={() => setShowExec(true)}>
+              Yönetici Özeti
+            </button>
+            <button
+              className="btn"
+              onClick={() => {
+                setExportNote(null);
+                setShowExport(true);
+              }}
+            >
+              Excel'e Aktar
+            </button>
+            <button className="btn" onClick={reset}>
+              Yeni dosya
+            </button>
+          </div>
         )}
       </header>
 
@@ -215,6 +255,28 @@ export default function App() {
           <DataQualityPanel q={quality} />
           <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
         </>
+      )}
+
+      {showExec && projection && summary && (
+        <ExecutiveSummary
+          summary={summary}
+          projection={projection}
+          asOf={asOf}
+          onClose={() => setShowExec(false)}
+          onExport={() => {
+            setShowExec(false);
+            setExportNote(null);
+            setShowExport(true);
+          }}
+        />
+      )}
+
+      {showExport && (
+        <ExportDialog
+          note={exportNote}
+          onClose={() => setShowExport(false)}
+          onConfirm={(s) => void doExport(s)}
+        />
       )}
 
       <footer className="app__footer">

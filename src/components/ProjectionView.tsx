@@ -25,7 +25,8 @@ export function ProjectionView({ result }: Props) {
     kapanis: Math.round(w.closing),
   }));
 
-  const minClosing = Math.min(...result.weeks.map((w) => w.closing));
+  const lowestWeek = result.weeks.reduce((lo, w) => (w.closing < lo.closing ? w : lo), result.weeks[0]!);
+  const minClosing = lowestWeek.closing;
   const negativeWeeks = result.weeks.filter((w) => w.closing < 0);
 
   return (
@@ -35,7 +36,7 @@ export function ProjectionView({ result }: Props) {
       {negativeWeeks.length > 0 ? (
         <p className="panel__note panel__note--bad">
           🔴 {negativeWeeks.length} haftada nakit açığı görünüyor — en düşük kapanış{' '}
-          <strong>{formatTRY(minClosing)} ₺</strong> ({shortDate(negativeWeeks[0]!.start)} haftası).
+          <strong>{formatTRY(minClosing)} ₺</strong> ({shortDate(lowestWeek.start)} haftası).
         </p>
       ) : (
         <p className="panel__note panel__note--good">

@@ -673,3 +673,191 @@ td {
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   margin: 0 0 16px;
 }
+
+/* ============ Header aksiyonları + primary buton ============ */
+.app__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn--primary:hover {
+  filter: brightness(1.05);
+  border-color: var(--accent);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============ Modal ============ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 16, 26, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 50;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 620px;
+  padding: 24px;
+}
+.modal--sm {
+  max-width: 440px;
+}
+.modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.modal__head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.modal__date {
+  margin: 2px 0 0;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+.modal__close {
+  border: 0;
+  background: none;
+  color: var(--fg-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.verdict {
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+.verdict--good {
+  background: var(--good-bg);
+  color: var(--good-fg);
+}
+.verdict--bad {
+  background: var(--bad-bg);
+  color: var(--bad-fg);
+}
+
+.exec-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.exec-fig {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.exec-fig__label {
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.exec-fig__value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.exec-cols {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 540px) {
+  .exec-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.exec-h3 {
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.exec-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.exec-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--grid);
+  font-size: 13px;
+}
+.exec-list__party {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exec-list__date {
+  font-size: 11.5px;
+  color: var(--fg-muted);
+}
+.exec-list__amt {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Export dialog ============ */
+.export-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.export-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.export-opt input {
+  margin-top: 3px;
+}
+.export-opt__label {
+  display: block;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.export-opt__desc {
+  display: block;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
