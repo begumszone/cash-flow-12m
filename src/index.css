@@ -980,3 +980,15 @@ td {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+.panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.panel__head h2 {
+  margin: 0;
+}
