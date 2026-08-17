@@ -34,8 +34,26 @@ export interface WeekProjection {
   closing: number;
 }
 
+/**
+ * Ufuk içindeki tek bir nakit hareketi — haftalık toplamların altındaki kalem.
+ * Haftalık toplamlarla aynı pass'ten üretilir, sapma olmaz.
+ */
+export interface ScheduledFlow {
+  weekIndex: number;
+  date: string;
+  direction: 'in' | 'out';
+  amount: number;
+  /** Cari adı (yoksa kodu). */
+  label: string;
+  kind: 'invoice' | 'cheque';
+  /** Fatura türü ya da çek durumu — satırın ne olduğunu açıklar. */
+  detail: string;
+}
+
 export interface ProjectionResult {
   weeks: WeekProjection[];
+  /** Ufuk içindeki tüm hareketler, tarihe göre; yaklaşan ödeme/tahsilat listesi. */
+  flows: ScheduledFlow[];
   /** Ufuk dışına (13 hafta sonrası) düşen, projeksiyona girmeyen tutarlar. */
   beyondHorizon: { in: number; out: number };
   /** Etkin vadesi hiç türetilemeyen (tarih yok) kalem tutarı. */
@@ -70,6 +88,7 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
   const outs = new Array(n).fill(0);
   const beyond = { in: 0, out: 0 };
   const undated = { in: 0, out: 0 };
+  const flows: ScheduledFlow[] = [];
 
   for (const item of items) {
     const eff = deriveEffectiveDueDate(item, opts);
@@ -91,6 +110,15 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
     }
     if (item.direction === 'in') ins[idx] += item.open_amount;
     else outs[idx] += item.open_amount;
+    flows.push({
+      weekIndex: idx,
+      date,
+      direction: item.direction,
+      amount: item.open_amount,
+      label: item.party_name || item.party_code,
+      kind: 'invoice',
+      detail: item.doc_type,
+    });
   }
 
   // Çek/senet: vadesi güvenilir, doğrudan haftaya düşer. Yalnızca nakde
@@ -109,7 +137,18 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
     }
     if (c.dir === 'in') ins[idx] += inst.amount;
     else outs[idx] += inst.amount;
+    flows.push({
+      weekIndex: idx,
+      date: inst.due_date,
+      direction: c.dir,
+      amount: inst.amount,
+      label: inst.party_name || inst.party_code || inst.drawer_name,
+      kind: 'cheque',
+      detail: inst.instrument_type === 'promissory_note' ? 'Senet' : 'Çek',
+    });
   }
+
+  flows.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const weeks: WeekProjection[] = [];
   let opening = opts.openingBalance;
@@ -123,5 +162,5 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
     opening = closing;
   }
 
-  return { weeks, beyondHorizon: beyond, undated };
+  return { weeks, flows, beyondHorizon: beyond, undated };
 }

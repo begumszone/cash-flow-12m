@@ -11,6 +11,7 @@ import { FileDrop } from './components/FileDrop';
 import { SummaryDashboard } from './components/SummaryDashboard';
 import { DataQualityPanel } from './components/DataQualityPanel';
 import { ProjectionView } from './components/ProjectionView';
+import { UpcomingFlows } from './components/UpcomingFlows';
 import { PartyTermsEditor } from './components/PartyTermsEditor';
 import { ChequePanel } from './components/ChequePanel';
 import { formatTRY, todayIso } from './lib/format';
@@ -196,6 +197,7 @@ export default function App() {
           </p>
 
           <ProjectionView result={projection} />
+          <UpcomingFlows result={projection} />
           <ChequePanel
             result={cek}
             fileName={cekFileName}
