@@ -198,7 +198,7 @@ export default function App() {
             {cek && <> · çek/senet dahil</>}
           </p>
 
-          <OpeningPosition accounts={accounts} onChange={setAccounts} />
+          <OpeningPosition accounts={accounts} onChange={setAccounts} asOf={asOf} />
           <ProjectionView result={projection} />
           <UpcomingFlows result={projection} />
           <ChequePanel

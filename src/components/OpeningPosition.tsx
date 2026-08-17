@@ -5,6 +5,23 @@ import { formatTRY } from '../lib/format';
 interface Props {
   accounts: CashAccount[];
   onChange: (accounts: CashAccount[]) => void;
+  /** Projeksiyonun başlangıç tarihi (ISO) — açılış = bir önceki gece kapanışı. */
+  asOf: string;
+}
+
+function longDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function prevDay(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -12,7 +29,7 @@ interface Props {
  * bloke olanlar işaretlenir ve toplamdan düşülür. Kullanılabilir toplam
  * projeksiyonun açılış bakiyesini besler (docs 3.8).
  */
-export function OpeningPosition({ accounts, onChange }: Props) {
+export function OpeningPosition({ accounts, onChange, asOf }: Props) {
   function update(id: string, patch: Partial<CashAccount>) {
     onChange(accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   }
@@ -42,6 +59,10 @@ export function OpeningPosition({ accounts, onChange }: Props) {
         Projeksiyon buradan başlar: bugünün açılışı = bir önceki gece kapanışındaki{' '}
         <strong>kasa + banka</strong> bakiyelerinin toplamı. Bloke/teminattaki hesapları
         işaretleyin — kullanılabilir nakde dahil edilmezler.
+      </p>
+      <p className="panel__note panel__note--info">
+        📅 <strong>{longDate(asOf)}</strong> açılışı = <strong>{longDate(prevDay(asOf))}</strong>{' '}
+        gece kapanışındaki banka + kasa bakiyeleri. Aşağıya o rakamları girin.
       </p>
 
       <div className="table-wrap">
