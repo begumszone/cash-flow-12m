@@ -7,7 +7,9 @@ import { partyTotals } from './quality/partyTotals';
 import { project, type Scenario } from './projection/project';
 import { buildSummary } from './projection/summary';
 import type { PartyTerms } from './derive/effectiveDueDate';
+import { availableCash, type CashAccount } from './core/cashPosition';
 import { FileDrop } from './components/FileDrop';
+import { OpeningPosition } from './components/OpeningPosition';
 import { SummaryDashboard } from './components/SummaryDashboard';
 import { DataQualityPanel } from './components/DataQualityPanel';
 import { ProjectionView } from './components/ProjectionView';
@@ -34,7 +36,11 @@ export default function App() {
   const [cekError, setCekError] = useState<string | null>(null);
 
   const [asOf, setAsOf] = useState(todayIso());
-  const [openingBalance, setOpeningBalance] = useState(0);
+  const [accounts, setAccounts] = useState<CashAccount[]>([
+    { id: 'kasa', kind: 'cash', name: 'Kasa', balance: 0, restricted: false },
+    { id: 'banka', kind: 'bank', name: 'Banka', balance: 0, restricted: false },
+  ]);
+  const openingBalance = useMemo(() => availableCash(accounts), [accounts]);
   const [defaultTerm, setDefaultTerm] = useState(30);
   const [scenario, setScenario] = useState<Scenario>('base');
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
@@ -108,6 +114,10 @@ export default function App() {
     setCekRows(null);
     setCekFileName('');
     setTerms(new Map());
+    setAccounts([
+      { id: 'kasa', kind: 'cash', name: 'Kasa', balance: 0, restricted: false },
+      { id: 'banka', kind: 'bank', name: 'Banka', balance: 0, restricted: false },
+    ]);
   }
 
   return (
@@ -153,14 +163,6 @@ export default function App() {
 
           <div className="controls">
             <label className="control">
-              <span>Açılış nakit (₺)</span>
-              <input
-                type="number"
-                value={openingBalance}
-                onChange={(e) => setOpeningBalance(Number(e.target.value) || 0)}
-              />
-            </label>
-            <label className="control">
               <span>Başlangıç tarihi</span>
               <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
             </label>
@@ -196,6 +198,7 @@ export default function App() {
             {cek && <> · çek/senet dahil</>}
           </p>
 
+          <OpeningPosition accounts={accounts} onChange={setAccounts} />
           <ProjectionView result={projection} />
           <UpcomingFlows result={projection} />
           <ChequePanel

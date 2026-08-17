@@ -48,7 +48,7 @@ export function SummaryDashboard({ s }: Props) {
       </div>
 
       <div className="tiles">
-        <Tile label="Açılış nakit" value={`${formatTRY(s.openingBalance)} ₺`} />
+        <Tile label="Açılış nakdi (kasa+banka)" value={`${formatTRY(s.openingBalance)} ₺`} />
         <Tile
           label="13 hafta sonu tahmini"
           value={`${formatTRY(s.endingBalance)} ₺`}
