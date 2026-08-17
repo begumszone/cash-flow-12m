@@ -87,6 +87,9 @@ Kısmi ödemeler doğru yansısın diye.
 | `amount_try` | decimal | |
 | `paid_amount` | decimal | Kısmi ödeme |
 | `installment_no` | int | Taksitli ödeme planında sıra |
+| `cost_center` | text | Masraf merkezi — kategori kaynağı (bkz. 3.10) |
+| `project_code` | text | Proje kodu — kategori/segment kaynağı |
+| `category` | enum | Gelir/gider türü (bkz. 3.10). Elle ya da masraf merkezinden türetilir |
 | `certainty` | enum | `committed`, `likely`, `estimated` |
 | `due_date_quality` | enum | `reliable`, `suspect`, `missing`, `overridden` |
 | `source_system` | text | |
@@ -226,6 +229,35 @@ ERP'de olmayan her şey: planlanan yatırım, temettü, vergi cezası, tahsil ed
 | `certainty` | enum |
 | `created_by` | text |
 | `note` | text |
+
+---
+
+### 3.10 Gelir/gider kategorileri
+
+Nakit akışının asıl yönetsel değeri, "ne kadar para" değil **"para nereye"** sorusundadır:
+ödenecek şey vergi mi, personel maaşı mı, stoğa mı? Her `open_item` (ve çek/senet, elle
+kalem) bir kategoriye bağlanır. Taksonomi klasik nakit akış projeksiyonu şablonlarından
+Türk KOBİ gerçeğine uyarlandı:
+
+- **Gelir:** Satış Tahsilatı, Kredi/Sermaye (finansman), Diğer Gelir
+- **Gider:** Mal/Stok Alımı, Personel Maaş, SGK/Bordro, Vergi, Kira, Enerji/Faturalar,
+  Nakliye/Lojistik, Dış Hizmet/Danışmanlık, Bakım/Onarım, Kredi Ödemesi (finansman),
+  Yatırım/Demirbaş (yatırım), Diğer Gider
+
+Her kategori bir faaliyet grubuna bağlıdır (`operating` / `investing` / `financing`), böylece
+IFRS tarzı üçlü kırılım da üretilebilir.
+
+**Kategori kaynağı, öncelik sırasıyla:**
+
+1. Elle atama (cari bazında) — kullanıcı bir cariyi bir kategoriye bağlar.
+2. **Masraf merkezi / proje kodu** — Logo'da tanımlıysa asıl güvenilir kaynak budur;
+   maaş, kira, vergi gibi giderler cari kartından değil masraf merkezinden ayrışır.
+3. İşlem Türü'nden zayıf tahmin (satınalma → stok, alınan hizmet → hizmet).
+
+> **Doğrulanacak (bkz. 8):** Borç Takip Raporu'nda masraf merkezi/proje kodu kolonları
+> yok; bunlar ya farklı bir export'tan ya da cari-kart tanımından gelmeli. Maaş (3.6) ve
+> vergi (3.7) kategorileri zaten ayrı tablolardan beslenir — kategori ekseni bu üç kaynağı
+> tek bir "para nereye" görünümünde birleştirir.
 
 ---
 
