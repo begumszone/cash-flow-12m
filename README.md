@@ -1,12 +1,12 @@
-# cash-flow-13w
+# 12 Aylık Nakit Akışı
 
-13 haftalık rolling nakit akışı projeksiyon aracı — Türkiye'deki KOBİ'ler için
-haftalık likidite planlama. **Tamamen tarayıcıda çalışır; veri hiçbir sunucuya
-gönderilmez.**
+Rolling nakit akışı projeksiyon aracı — Türkiye'deki KOBİ'ler için likidite planlama.
+Ufuk seçilebilir (13 hafta / 6 ay / 12 ay), varsayılan **12 ay**. **Tamamen tarayıcıda
+çalışır; veri hiçbir sunucuya gönderilmez.**
 
 Logo Tiger 3 "Borç Takip Raporu" (.xlsx) export'unu yükleyin; araç açık kalemleri
-türetir, veri kalitesindeki boşlukları rakamla gösterir, cari bazında vade girmenize
-izin verir ve 13 haftalık nakit projeksiyonunu (grafik + tablo, üç senaryo) çıkarır.
+türetir, veri kalitesindeki boşlukları rakamla gösterir, cari bazında vade ve kategori
+girmenize izin verir ve nakit projeksiyonunu (grafik + tablo, üç senaryo) çıkarır.
 
 ## Çalıştırma
 
