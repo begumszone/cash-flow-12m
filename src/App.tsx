@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react';
-import { readBorcTakipWorkbook } from './adapters/logo/readWorkbook';
+import { readBorcTakipWorkbook, readCekSenetWorkbook } from './adapters/logo/readWorkbook';
 import { adaptBorcTakip, type BorcTakipRow } from './adapters/logo/borcTakip';
+import { adaptCekSenet, type CekSenetRow, type CekSenetResult } from './adapters/logo/cekSenet';
 import { assessQuality } from './quality/assess';
 import { partyTotals } from './quality/partyTotals';
 import { project, type Scenario } from './projection/project';
+import { buildSummary } from './projection/summary';
 import type { PartyTerms } from './derive/effectiveDueDate';
 import { FileDrop } from './components/FileDrop';
+import { SummaryDashboard } from './components/SummaryDashboard';
 import { DataQualityPanel } from './components/DataQualityPanel';
 import { ProjectionView } from './components/ProjectionView';
 import { PartyTermsEditor } from './components/PartyTermsEditor';
+import { ChequePanel } from './components/ChequePanel';
 import { formatTRY, todayIso } from './lib/format';
 
 const SCENARIOS: { key: Scenario; label: string; hint: string }[] = [
@@ -22,6 +26,11 @@ export default function App() {
   const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [cekRows, setCekRows] = useState<CekSenetRow[] | null>(null);
+  const [cekFileName, setCekFileName] = useState('');
+  const [cekBusy, setCekBusy] = useState(false);
+  const [cekError, setCekError] = useState<string | null>(null);
 
   const [asOf, setAsOf] = useState(todayIso());
   const [openingBalance, setOpeningBalance] = useState(0);
@@ -44,7 +53,23 @@ export default function App() {
     }
   }
 
+  async function handleCekFile(buffer: ArrayBuffer, name: string) {
+    setCekBusy(true);
+    setCekError(null);
+    try {
+      const parsed = await readCekSenetWorkbook(buffer);
+      if (parsed.length === 0) throw new Error('Çek/senet satırı bulunamadı.');
+      setCekRows(parsed);
+      setCekFileName(name);
+    } catch (e) {
+      setCekError(e instanceof Error ? e.message : 'Dosya okunamadı.');
+    } finally {
+      setCekBusy(false);
+    }
+  }
+
   const adapter = useMemo(() => (rows ? adaptBorcTakip(rows) : null), [rows]);
+  const cek = useMemo<CekSenetResult | null>(() => (cekRows ? adaptCekSenet(cekRows) : null), [cekRows]);
   const quality = useMemo(() => (adapter ? assessQuality(adapter, asOf) : null), [adapter, asOf]);
   const parties = useMemo(() => (adapter ? partyTotals(adapter.openItems) : []), [adapter]);
   const projection = useMemo(
@@ -56,9 +81,14 @@ export default function App() {
             scenario,
             terms,
             fallbackTermDays: { in: defaultTerm, out: defaultTerm },
+            instruments: cek?.instruments,
           })
         : null,
-    [adapter, openingBalance, asOf, scenario, terms, defaultTerm],
+    [adapter, cek, openingBalance, asOf, scenario, terms, defaultTerm],
+  );
+  const summary = useMemo(
+    () => (projection && adapter ? buildSummary(projection, adapter, cek?.instruments ?? null) : null),
+    [projection, adapter, cek],
   );
 
   function setPartyTerm(code: string, term: PartyTerms | null) {
@@ -74,6 +104,8 @@ export default function App() {
     setRows(null);
     setFileName('');
     setError(null);
+    setCekRows(null);
+    setCekFileName('');
     setTerms(new Map());
   }
 
@@ -83,8 +115,7 @@ export default function App() {
         <div>
           <h1>13 Haftalık Nakit Akışı</h1>
           <p className="app__sub">
-            Logo Borç Takip Raporu'ndan haftalık likidite projeksiyonu · veriniz tarayıcınızdan
-            çıkmaz
+            Logo raporlarından haftalık likidite projeksiyonu · veriniz tarayıcınızdan çıkmaz
           </p>
         </div>
         {rows && (
@@ -106,16 +137,19 @@ export default function App() {
               </li>
               <li>Dosyayı buraya bırakın — açık kalemler ve veri kalitesi anında çıkar.</li>
               <li>Cari vadelerini girip 13 haftalık projeksiyonu görün.</li>
+              <li>İsterseniz Çek/Senet raporunu da ekleyip çekleri projeksiyona katın.</li>
             </ol>
             <p className="intro__privacy">
-              🔒 Dosya sunucuya <strong>gönderilmez</strong>; tümüyle tarayıcınızda işlenir.
+              🔒 Dosyalar sunucuya <strong>gönderilmez</strong>; tümüyle tarayıcınızda işlenir.
             </p>
           </div>
         </div>
       )}
 
-      {rows && quality && projection && (
+      {rows && quality && projection && summary && (
         <>
+          <SummaryDashboard s={summary} />
+
           <div className="controls">
             <label className="control">
               <span>Açılış nakit (₺)</span>
@@ -158,9 +192,21 @@ export default function App() {
           <p className="filemeta">
             <strong>{fileName}</strong> · {rows.length.toLocaleString('tr-TR')} satır ·{' '}
             {formatTRY(quality.openItems.total.amount)} ₺ açık kalem
+            {cek && <> · çek/senet dahil</>}
           </p>
 
           <ProjectionView result={projection} />
+          <ChequePanel
+            result={cek}
+            fileName={cekFileName}
+            busy={cekBusy}
+            error={cekError}
+            onFile={(b, n) => void handleCekFile(b, n)}
+            onClear={() => {
+              setCekRows(null);
+              setCekFileName('');
+            }}
+          />
           <DataQualityPanel q={quality} />
           <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
         </>

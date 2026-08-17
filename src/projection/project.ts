@@ -1,4 +1,6 @@
 import type { OpenItem } from '../core/openItem';
+import type { Instrument } from '../core/instrument';
+import { instrumentContribution } from '../adapters/logo/cekSenet';
 import {
   deriveEffectiveDueDate,
   type DeriveOptions,
@@ -45,6 +47,8 @@ export interface ProjectOptions extends DeriveOptions {
   asOf: string;
   horizon?: number;
   scenario: Scenario;
+  /** İsteğe bağlı çek/senet portföyü — vadeleri güvenilir, türetme gerekmez. */
+  instruments?: Instrument[];
 }
 
 /** Bir açık kalemin, seçilen senaryoda kullanılacak tarihi ve güveni. */
@@ -87,6 +91,24 @@ export function project(items: OpenItem[], opts: ProjectOptions): ProjectionResu
     }
     if (item.direction === 'in') ins[idx] += item.open_amount;
     else outs[idx] += item.open_amount;
+  }
+
+  // Çek/senet: vadesi güvenilir, doğrudan haftaya düşer. Yalnızca nakde
+  // dönecekler (portföy/tahsilde) katkı verir; teminat/ciro/karşılıksız hariç.
+  for (const inst of opts.instruments ?? []) {
+    const c = instrumentContribution(inst);
+    if (c.dir === null) continue;
+    if (!inst.due_date) {
+      undated[c.dir] += inst.amount;
+      continue;
+    }
+    const idx = weekIndexOf(inst.due_date, opts.asOf, n);
+    if (idx === null) {
+      beyond[c.dir] += inst.amount;
+      continue;
+    }
+    if (c.dir === 'in') ins[idx] += inst.amount;
+    else outs[idx] += inst.amount;
   }
 
   const weeks: WeekProjection[] = [];

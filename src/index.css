@@ -359,3 +359,129 @@ td {
   font-size: 13.5px;
   padding: 12px 0 0;
 }
+
+/* ============ Özet dashboard (en üst) ============ */
+.dash {
+  margin-bottom: 18px;
+}
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.hero--good {
+  background: linear-gradient(135deg, var(--good-bg), var(--surface));
+  border-color: color-mix(in srgb, var(--in) 35%, var(--border));
+}
+.hero--bad {
+  background: linear-gradient(135deg, var(--bad-bg), var(--surface));
+  border-color: color-mix(in srgb, var(--out) 35%, var(--border));
+}
+.hero__label {
+  font-size: 13px;
+  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+}
+.hero__value {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.hero--good .hero__value {
+  color: var(--good-fg);
+}
+.hero--bad .hero__value {
+  color: var(--bad-fg);
+}
+.hero__sub {
+  font-size: 13.5px;
+  color: var(--fg-muted);
+}
+.hero__badge {
+  font-size: 34px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+.tiles--compact {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 4px;
+}
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.tile--in {
+  border-left-color: var(--in);
+}
+.tile--out {
+  border-left-color: var(--out);
+}
+.tile--neutral {
+  border-left-color: var(--accent);
+}
+.tile__label {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+}
+.tile__value {
+  font-size: 21px;
+  font-weight: 700;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.tile--in .tile__value {
+  color: var(--in);
+}
+.tile--out .tile__value {
+  color: var(--out);
+}
+.tile__sub {
+  font-size: 11.5px;
+  color: var(--fg-muted);
+  margin-top: 3px;
+}
+
+/* ============ Çek paneli ============ */
+.badge-opt {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+.drop--compact {
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+}
+.drop--compact span {
+  font-size: 13.5px;
+}
+.drop--compact .drop__title {
+  font-weight: 600;
+}
+.drop__icon--sm {
+  font-size: 26px;
+}
