@@ -16,7 +16,7 @@ interface Props {
   result: ProjectionResult;
 }
 
-/** 13 haftalık projeksiyon: giriş/çıkış barları + devreden kapanış çizgisi. */
+/** Haftalık projeksiyon: giriş/çıkış barları + devreden kapanış çizgisi. */
 export function ProjectionView({ result }: Props) {
   const data = result.weeks.map((w) => ({
     label: shortDate(w.start),

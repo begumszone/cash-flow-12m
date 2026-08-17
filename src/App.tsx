@@ -207,7 +207,7 @@ export default function App() {
                 <strong> .xlsx</strong> olarak alın.
               </li>
               <li>Dosyayı buraya bırakın — açık kalemler ve veri kalitesi anında çıkar.</li>
-              <li>Cari vadelerini girip 13 haftalık projeksiyonu görün.</li>
+              <li>Cari vadelerini girip nakit projeksiyonunu görün (13 hafta / 6 ay / 12 ay).</li>
               <li>İsterseniz Çek/Senet raporunu da ekleyip çekleri projeksiyona katın.</li>
             </ol>
             <p className="intro__privacy">
