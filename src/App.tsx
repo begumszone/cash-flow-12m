@@ -272,7 +272,7 @@ export default function App() {
 
           <OpeningPosition accounts={accounts} onChange={setAccounts} asOf={asOf} />
           <ProjectionView result={projection} />
-          <UpcomingFlows result={projection} />
+          <UpcomingFlows result={projection} asOf={asOf} />
           <ChequePanel
             result={cek}
             fileName={cekFileName}
