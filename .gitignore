@@ -9,3 +9,7 @@ data/
 
 # Playwright ekran görüntüleri (sentetik veriyle üretilir, gerekmez)
 *.png
+
+# Vitrin ekran gorüntüleri (sentetik veri) — README icin izinli
+!docs/screenshots/
+!docs/screenshots/*.png
