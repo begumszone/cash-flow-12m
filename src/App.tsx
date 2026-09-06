@@ -9,6 +9,7 @@ import { buildSummary } from './projection/summary';
 import type { PartyTerms } from './derive/effectiveDueDate';
 import { availableCash, type CashAccount } from './core/cashPosition';
 import { FileDrop } from './components/FileDrop';
+import { HelpFaq } from './components/HelpFaq';
 import { OpeningPosition } from './components/OpeningPosition';
 import { SummaryDashboard } from './components/SummaryDashboard';
 import { DataQualityPanel } from './components/DataQualityPanel';
@@ -61,6 +62,7 @@ export default function App() {
   const [horizon, setHorizon] = useState(52); // 12 ay (rolling) varsayılan
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
   const [categories, setCategories] = useState<Map<string, CashCategory>>(new Map());
+  const [showHelp, setShowHelp] = useState(false);
   const [showExec, setShowExec] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
@@ -175,46 +177,50 @@ export default function App() {
             Logo raporlarından rolling likidite projeksiyonu · veriniz tarayıcınızdan çıkmaz
           </p>
         </div>
-        {rows && (
-          <div className="app__actions">
-            <button className="btn btn--primary" onClick={() => setShowExec(true)}>
-              Yönetici Özeti
-            </button>
-            <button
-              className="btn"
-              onClick={() => {
-                setExportNote(null);
-                setShowExport(true);
-              }}
-            >
-              Excel'e Aktar
-            </button>
-            <button className="btn" onClick={reset}>
-              Yeni dosya
-            </button>
-          </div>
-        )}
+        <div className="app__actions">
+          <button className="btn" onClick={() => setShowHelp(true)}>
+            Nasıl çalışır & SSS
+          </button>
+          {rows && (
+            <>
+              <button className="btn btn--primary" onClick={() => setShowExec(true)}>
+                Yönetici Özeti
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setExportNote(null);
+                  setShowExport(true);
+                }}
+              >
+                Excel'e Aktar
+              </button>
+              <button className="btn" onClick={reset}>
+                Yeni dosya
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
       {!rows && (
-        <div className="intro">
-          <FileDrop onFile={(b, n) => void handleFile(b, n)} busy={busy} error={error} />
-          <div className="intro__how">
-            <h3>Nasıl çalışır</h3>
-            <ol>
-              <li>
-                Logo'da <strong>Finans → Ödeme/Tahsilat Raporları → Borç Takip Raporu</strong>'nu
-                <strong> .xlsx</strong> olarak alın.
-              </li>
-              <li>Dosyayı buraya bırakın — açık kalemler ve veri kalitesi anında çıkar.</li>
-              <li>Cari vadelerini girip nakit projeksiyonunu görün (13 hafta / 6 ay / 12 ay).</li>
-              <li>İsterseniz Çek/Senet raporunu da ekleyip çekleri projeksiyona katın.</li>
-            </ol>
-            <p className="intro__privacy">
-              🔒 Dosyalar sunucuya <strong>gönderilmez</strong>; tümüyle tarayıcınızda işlenir.
-            </p>
+        <>
+          <div className="intro">
+            <FileDrop onFile={(b, n) => void handleFile(b, n)} busy={busy} error={error} />
+            <div className="intro__how">
+              <h3>Başlarken</h3>
+              <p style={{ margin: '0 0 10px', fontSize: 13.5 }}>
+                Logo'dan <strong>Borç Takip Raporu</strong>'nu <strong>.xlsx</strong> olarak alıp
+                buraya bırakın — gerisi otomatik. Ne yükleyeceğiniz, Excel'de hangi kolonların
+                olması gerektiği ve tüm sorular aşağıda.
+              </p>
+              <p className="intro__privacy">
+                🔒 Dosyalar sunucuya <strong>gönderilmez</strong>; tümüyle tarayıcınızda işlenir.
+              </p>
+            </div>
           </div>
-        </div>
+          <HelpFaq />
+        </>
       )}
 
       {rows && quality && projection && summary && (
@@ -288,6 +294,25 @@ export default function App() {
           <CategoryEditor parties={parties} categories={categories} onChange={setPartyCategory} />
           <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
         </>
+      )}
+
+      {showHelp && (
+        <div className="modal-overlay" onClick={() => setShowHelp(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal__head">
+              <h2>Nasıl çalışır & SSS</h2>
+              <button className="modal__close" onClick={() => setShowHelp(false)} aria-label="Kapat">
+                ✕
+              </button>
+            </div>
+            <HelpFaq />
+            <div className="modal__foot">
+              <button className="btn" onClick={() => setShowHelp(false)}>
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showExec && projection && summary && (
