@@ -13,6 +13,24 @@ export function shortDate(iso: string): string {
   return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
+/** "2026-08-17" -> "17 Ağustos 2026" */
+export function longDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/** "2026-08-17" -> "Pzt" (kısa gün adı). */
+export function weekday(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('tr-TR', {
+    weekday: 'short',
+    timeZone: 'UTC',
+  });
+}
+
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }

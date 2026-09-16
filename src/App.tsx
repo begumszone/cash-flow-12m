@@ -14,16 +14,29 @@ import { OpeningPosition } from './components/OpeningPosition';
 import { SummaryDashboard } from './components/SummaryDashboard';
 import { DataQualityPanel } from './components/DataQualityPanel';
 import { ProjectionView } from './components/ProjectionView';
-import { UpcomingFlows } from './components/UpcomingFlows';
+import { FlowLedger } from './components/FlowLedger';
+import { RiskView } from './components/RiskView';
 import { PartyTermsEditor } from './components/PartyTermsEditor';
 import { CategoryEditor } from './components/CategoryEditor';
 import type { CashCategory } from './core/category';
 import { ChequePanel } from './components/ChequePanel';
-import { ExecutiveSummary } from './components/ExecutiveSummary';
+import { ExecutivePanel } from './components/ExecutivePanel';
 import { ExportDialog } from './components/ExportDialog';
+import { addDays } from './derive/effectiveDueDate';
 import { buildCsv, type ExportSections } from './lib/exportCsv';
 import { saveTextFile } from './lib/saveFile';
 import { formatTRY, todayIso } from './lib/format';
+
+type TabKey = 'ozet' | 'projeksiyon' | 'tahsilat' | 'odeme' | 'risk' | 'ayarlar';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'ozet', label: 'Yönetici Özeti' },
+  { key: 'projeksiyon', label: 'Projeksiyon' },
+  { key: 'tahsilat', label: 'Tahsilatlar' },
+  { key: 'odeme', label: 'Ödemeler' },
+  { key: 'risk', label: 'Sıkışıklık' },
+  { key: 'ayarlar', label: 'Ayarlar' },
+];
 
 const MAX_FILE_BYTES = 40 * 1024 * 1024; // 40 MB — makul üst sınır
 
@@ -63,9 +76,14 @@ export default function App() {
   const [terms, setTerms] = useState<Map<string, PartyTerms>>(new Map());
   const [categories, setCategories] = useState<Map<string, CashCategory>>(new Map());
   const [showHelp, setShowHelp] = useState(false);
-  const [showExec, setShowExec] = useState(false);
+  const [tab, setTab] = useState<TabKey>('ozet');
   const [showExport, setShowExport] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
+
+  function openExport() {
+    setExportNote(null);
+    setShowExport(true);
+  }
 
   async function handleFile(buffer: ArrayBuffer, name: string) {
     setBusy(true);
@@ -162,6 +180,7 @@ export default function App() {
     setCekFileName('');
     setTerms(new Map());
     setCategories(new Map());
+    setTab('ozet');
     setAccounts([
       { id: 'kasa', kind: 'cash', name: 'Kasa', balance: 0, restricted: false },
       { id: 'banka', kind: 'bank', name: 'Banka', balance: 0, restricted: false },
@@ -183,16 +202,7 @@ export default function App() {
           </button>
           {rows && (
             <>
-              <button className="btn btn--primary" onClick={() => setShowExec(true)}>
-                Yönetici Özeti
-              </button>
-              <button
-                className="btn"
-                onClick={() => {
-                  setExportNote(null);
-                  setShowExport(true);
-                }}
-              >
+              <button className="btn" onClick={openExport}>
                 Excel'e Aktar
               </button>
               <button className="btn" onClick={reset}>
@@ -276,23 +286,78 @@ export default function App() {
             {cek && <> · çek/senet dahil</>}
           </p>
 
-          <OpeningPosition accounts={accounts} onChange={setAccounts} asOf={asOf} />
-          <ProjectionView result={projection} />
-          <UpcomingFlows result={projection} asOf={asOf} />
-          <ChequePanel
-            result={cek}
-            fileName={cekFileName}
-            busy={cekBusy}
-            error={cekError}
-            onFile={(b, n) => void handleCekFile(b, n)}
-            onClear={() => {
-              setCekRows(null);
-              setCekFileName('');
-            }}
-          />
-          <DataQualityPanel q={quality} />
-          <CategoryEditor parties={parties} categories={categories} onChange={setPartyCategory} />
-          <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
+          <nav className="tabs" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={tab === t.key}
+                className={`tab ${tab === t.key ? 'tab--on' : ''}`}
+                onClick={() => setTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="tab-panel">
+            {tab === 'ozet' && (
+              <ExecutivePanel
+                summary={summary}
+                projection={projection}
+                quality={quality}
+                asOf={asOf}
+                onOpenRisk={() => setTab('risk')}
+                onOpenIncome={() => setTab('tahsilat')}
+                onOpenPayments={() => setTab('odeme')}
+                onExport={openExport}
+              />
+            )}
+
+            {tab === 'projeksiyon' && <ProjectionView result={projection} />}
+
+            {tab === 'tahsilat' && (
+              <FlowLedger
+                flows={projection.flows}
+                direction="in"
+                asOf={asOf}
+                horizonEnd={addDays(projection.weeks[projection.weeks.length - 1]?.start ?? asOf, 7)}
+              />
+            )}
+
+            {tab === 'odeme' && (
+              <FlowLedger
+                flows={projection.flows}
+                direction="out"
+                asOf={asOf}
+                horizonEnd={addDays(projection.weeks[projection.weeks.length - 1]?.start ?? asOf, 7)}
+              />
+            )}
+
+            {tab === 'risk' && (
+              <RiskView projection={projection} summary={summary} quality={quality} />
+            )}
+
+            {tab === 'ayarlar' && (
+              <>
+                <OpeningPosition accounts={accounts} onChange={setAccounts} asOf={asOf} />
+                <ChequePanel
+                  result={cek}
+                  fileName={cekFileName}
+                  busy={cekBusy}
+                  error={cekError}
+                  onFile={(b, n) => void handleCekFile(b, n)}
+                  onClear={() => {
+                    setCekRows(null);
+                    setCekFileName('');
+                  }}
+                />
+                <CategoryEditor parties={parties} categories={categories} onChange={setPartyCategory} />
+                <PartyTermsEditor parties={parties} terms={terms} onChange={setPartyTerm} />
+                <DataQualityPanel q={quality} />
+              </>
+            )}
+          </div>
         </>
       )}
 
@@ -313,20 +378,6 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
-
-      {showExec && projection && summary && (
-        <ExecutiveSummary
-          summary={summary}
-          projection={projection}
-          asOf={asOf}
-          onClose={() => setShowExec(false)}
-          onExport={() => {
-            setShowExec(false);
-            setExportNote(null);
-            setShowExport(true);
-          }}
-        />
       )}
 
       {showExport && (

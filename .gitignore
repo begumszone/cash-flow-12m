@@ -13,3 +13,6 @@ data/
 # Vitrin ekran gorüntüleri (sentetik veri) — README icin izinli
 !docs/screenshots/
 !docs/screenshots/*.png
+
+# TypeScript incremental build cache
+*.tsbuildinfo

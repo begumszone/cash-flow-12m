@@ -1,31 +1,36 @@
 import type { Summary } from '../projection/summary';
 import type { ProjectionResult } from '../projection/project';
+import type { QualityReport } from '../quality/assess';
 import { categoryBreakdown } from '../projection/categoryBreakdown';
-import { formatTRY, shortDate, horizonLabel } from '../lib/format';
+import { formatTRY, shortDate, longDate, horizonLabel } from '../lib/format';
 
 interface Props {
   summary: Summary;
   projection: ProjectionResult;
+  quality: QualityReport;
   asOf: string;
-  onClose: () => void;
+  onOpenRisk: () => void;
+  onOpenIncome: () => void;
+  onOpenPayments: () => void;
   onExport: () => void;
 }
 
-function longDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
 /**
- * Yönetici Özeti — tek bakışta durum. İki katman: (1) BU HAFTA (raporun alındığı
- * hafta) toplam tahsilat/ödeme/net; (2) ufuk boyunca dip nokta. Sade tutulur,
- * yalnızca gerçekten kritik olan (negatif dip) renklenir.
+ * Yönetici Özeti — artık ayrı bir sayfa (sekme). Tek bakışta durum: (1) bu hafta
+ * tahsilat/ödeme/net; (2) ufuk boyunca dip nokta; (3) para nereye gidiyor.
+ * Detaya inmeden karar verilebilsin diye sade; kritik olan (negatif dip)
+ * bordo renklenir, gerisi sakin.
  */
-export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport }: Props) {
+export function ExecutivePanel({
+  summary,
+  projection,
+  quality,
+  asOf,
+  onOpenRisk,
+  onOpenIncome,
+  onOpenPayments,
+  onExport,
+}: Props) {
   const deficit = summary.lowestClosing < 0;
   const hl = horizonLabel(summary.horizonWeeks);
   const w0 = projection.weeks[0];
@@ -43,16 +48,25 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
   const topExpenseCats = breakdown.expense.slice(0, 5);
   const maxCat = topExpenseCats[0]?.amount ?? 1;
 
+  // Veri dürüstlüğü: açık kalemlerin ne kadarı "şüpheli vade" (ERP'de vade =
+  // belge tarihi) taşıyor? Yüksekse tutarlar ilk haftaya yığılır ve sonraki
+  // haftalar olduğundan sakin görünür — yöneticiye bunu bir kez söyle.
+  const totalAmt = quality.openItems.total.amount || 1;
+  const suspectShare = quality.dueDate.suspect.amount / totalAmt;
+  const showCaveat = suspectShare >= 0.4;
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <div className="modal__head">
+    <div className="exec-page">
+      <div className="panel">
+        <div className="panel__head">
           <div>
             <h2>Yönetici Özeti</h2>
-            <p className="modal__date">{longDate(asOf)} · {hl} rolling görünüm</p>
+            <p className="panel__lead" style={{ margin: 0 }}>
+              {longDate(asOf)} · {hl} rolling görünüm
+            </p>
           </div>
-          <button className="modal__close" onClick={onClose} aria-label="Kapat">
-            ✕
+          <button className="btn btn--primary" onClick={onExport}>
+            Excel'e aktar
           </button>
         </div>
 
@@ -110,32 +124,52 @@ export function ExecutiveSummary({ summary, projection, asOf, onClose, onExport 
           </span>
         </div>
 
-        {topExpenseCats.length > 0 && (
-          <>
-            <h3 className="exec-h3">Ödemeler nereye gidiyor</h3>
-            <ul className="cat-bars">
-              {topExpenseCats.map((c) => (
-                <li key={c.key} className="cat-bar">
-                  <span className="cat-bar__label">{c.label}</span>
-                  <span className="cat-bar__track">
-                    <span className="cat-bar__fill" style={{ width: `${(c.amount / maxCat) * 100}%` }} />
-                  </span>
-                  <span className="cat-bar__amt neg">{formatTRY(c.amount)} ₺</span>
-                </li>
-              ))}
-            </ul>
-          </>
+        {showCaveat && (
+          <p className="panel__note panel__note--info" style={{ marginTop: 14 }}>
+            Not: Açık kalemlerin <strong>%{Math.round(suspectShare * 100)}</strong>'i ERP'de vade = belge
+            tarihi taşıyor. Bu yüzden tutarların çoğu ilk haftaya yığılır ve sonraki haftalar
+            olduğundan sakin görünebilir. Gerçek vadeleri <strong>Ayarlar → cari vade</strong> ile
+            düzeltip tabloyu netleştirebilirsiniz.
+          </p>
         )}
-
-        <div className="modal__foot">
-          <button className="btn" onClick={onClose}>
-            Kapat
-          </button>
-          <button className="btn btn--primary" onClick={onExport}>
-            Excel'e aktar
-          </button>
-        </div>
       </div>
+
+      {/* Hızlı geçişler */}
+      <div className="exec-nav">
+        <button className="exec-nav__card" onClick={onOpenRisk}>
+          <span className="exec-nav__title">Nakit sıkışıklığı</span>
+          <span className="exec-nav__hint">
+            {deficit
+              ? `${summary.deficitWeeks} haftada açık — en dar anları gör`
+              : 'En dar haftalar ve en büyük ödemeler'}
+          </span>
+        </button>
+        <button className="exec-nav__card" onClick={onOpenIncome}>
+          <span className="exec-nav__title">Gelecek tahsilatlar</span>
+          <span className="exec-nav__hint">Kimden ne bekleniyor — günlük özet</span>
+        </button>
+        <button className="exec-nav__card" onClick={onOpenPayments}>
+          <span className="exec-nav__title">Gönderilecek ödemeler</span>
+          <span className="exec-nav__hint">Kime ne ödenecek — günlük özet</span>
+        </button>
+      </div>
+
+      {topExpenseCats.length > 0 && (
+        <div className="panel">
+          <h3 className="exec-h3">Ödemeler nereye gidiyor</h3>
+          <ul className="cat-bars">
+            {topExpenseCats.map((c) => (
+              <li key={c.key} className="cat-bar">
+                <span className="cat-bar__label">{c.label}</span>
+                <span className="cat-bar__track">
+                  <span className="cat-bar__fill" style={{ width: `${(c.amount / maxCat) * 100}%` }} />
+                </span>
+                <span className="cat-bar__amt neg">{formatTRY(c.amount)} ₺</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
